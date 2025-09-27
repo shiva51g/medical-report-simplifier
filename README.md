@@ -1,50 +1,90 @@
-# Medical Report Simplifier (FastAPI)
+Here’s a clean **README.md** for your medical report simplifier project:
 
-This is a complete starter project for **Problem 7: AI-Powered Medical Report Simplifier** 
+````markdown
+# Medical Report Simplifier
 
-## What is included
-- FastAPI backend with endpoints:
-  - `POST /ocr-extract` - accepts `text` or `file` (image/pdf) and returns `tests_raw` (mock or OCR).
-  - `POST /normalize-tests` - normalizes raw test lines into structured test objects.
-  - `POST /generate-summary` - generates a patient-friendly summary and explanations (uses AI client; mocked if no API key).
-  - `POST /simplify-report` - orchestrates the full pipeline (OCR -> normalize -> summary).
+A backend service that takes medical reports (typed or scanned) and produces **patient-friendly explanations**. The service handles OCR errors, normalizes tests, and ensures no hallucinated results are added. Final output includes **normalized lab tests** and **simplified explanations**.
 
-- Simple OCR fallback (uses pytesseract if available; otherwise parses provided text).
-- AI client wrapper that uses OpenAI if `OPENAI_API_KEY` is set; otherwise returns deterministic mock output.
-- Pydantic models and robust error handling + guardrails (hallucination check, confidence thresholds).
+## Features
 
-## How to run locally (Linux/macOS)
+- Extract lab test values from **typed or scanned medical reports**.
+- Normalize test names, units, reference ranges, and statuses.
+- Handle OCR errors and minor typos.
+- Produce patient-friendly summaries without hallucinations.
+- Works for common tests like:
+  - Hemoglobin (Hb)
+  - White Blood Cells (WBC)
+  - Red Blood Cells (RBC)
+  - Platelets
 
-1. Create a virtual env & install:
+## Tech Stack
+
+- **Python 3.11+**
+- **FastAPI** for backend API
+- **Pydantic** for data validation
+- **OpenAI API** (optional) for generating patient-friendly summaries
+- **Regex** and custom logic for test normalization
+
+## Setup
+
+1. Clone the repository:
 ```bash
-python3 -m venv venv
-source venv/bin/activate
+git clone https://github.com/shiva51g/medical-report-simplifier.git
+cd medical-report-simplifier
+````
+
+2. Create a virtual environment:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate   # Linux/macOS
+.venv\Scripts\activate      # Windows
+```
+
+3. Install dependencies:
+
+```bash
 pip install -r requirements.txt
 ```
 
-2. (Optional) Install Tesseract for OCR:
-- Ubuntu/Debian: `sudo apt-get install tesseract-ocr`
-- macOS: `brew install tesseract`
+4. Add your `.env` file (for API keys or secrets):
 
-3. Run the server:
-```bash
-uvicorn main:app --reload --port 8000
+```env
+OPENAI_API_KEY=your_openai_api_key_here
 ```
 
-4. Test with curl/Postman using `example_request.json` or the endpoints below.
+5. Start the FastAPI server:
 
-## Example requests
-
-- OCR Extract (text)
 ```bash
-curl -X POST "http://localhost:8000/ocr-extract" -H "Content-Type: application/json" -d @example_request.json
+uvicorn main:app --reload
 ```
 
-- Simplify report (chained)
-```bash
-curl -X POST "http://localhost:8000/simplify-report" -H "Content-Type: application/json" -d @example_request.json
+The API will be available at `http://127.0.0.1:8000`.
+
+## API Endpoints
+
+* `POST /simplify-report-text` – Send a typed report and get normalized tests with a summary.
+* `POST /simplify-report-image` – Send an image report (OCR) and get normalized tests with a summary.
+
+### Example Input
+
+```json
+{
+  "report_text": "Hemoglobin 10.2 g/dL, WBC 11,200 /uL, RBC 4.5 x10^12/L, Platelets 300,000 /uL"
+}
 ```
 
-## Notes on AI usage
-- Set `OPENAI_API_KEY` environment variable to enable real AI summarization.
-- If no key is present, the server returns a safe deterministic mock summary for demonstration/testing.
+### Example Output
+
+```json
+{
+  "tests": [
+    {"name":"Hemoglobin","value":10.2,"unit":"g/dL","status":"low","ref_range":{"low":12,"high":18}},
+    {"name":"WBC","value":11200,"unit":"/uL","status":"high","ref_range":{"low":4000,"high":11000}},
+    {"name":"RBC","value":4.5,"unit":"x10^12/L","status":"normal","ref_range":{"low":4,"high":5.8}},
+    {"name":"Platelets","value":300000,"unit":"/uL","status":"normal","ref_range":{"low":150000,"high":450000}}
+  ],
+  "summary": "Low hemoglobin and high white blood cell count.",
+  "status":"ok"
+}
+```
