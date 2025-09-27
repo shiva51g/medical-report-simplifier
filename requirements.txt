@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+pydantic
+python-multipart
+regex
+openai
+pytesseract
+Pillow
+numpy
+easyocr
